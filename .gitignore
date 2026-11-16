@@ -1,6 +1,11 @@
 Notes.md
 temp
 
+# Ignore all .env files in root and every subdirectory
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
