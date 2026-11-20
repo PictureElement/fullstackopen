@@ -29,5 +29,6 @@ dist-ssr
 !.env.example
 
 # Miscellaneous
-Notes.md
+COOLIFY_DEPLOYMENT.md
+COURSE_NOTES.md
 temp

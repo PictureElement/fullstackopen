@@ -127,7 +127,37 @@ The app is deployed on [Coolify](https://coolify.io/) as a single Node.js proces
 
 ### Architecture
 
-<!-- TODO: Add architecture diagram -->
+```mermaid
+flowchart TD
+    subgraph browser["Browser (Client)"]
+        react["React App<br>(origin: https://<br>fullstackphonebook.msof.me)"]
+    end
+
+    subgraph server["Host: Cloud VM<br>(Ubuntu + Docker, managed by Coolify)"]
+        subgraph proxycontainer["Traefik Container"]
+            traefik["Traefik Proc<br>(https://fullstackphonebook.msof.me)<br>TLS termination (Let's Encrypt)"]
+        end
+        subgraph appcontainer["App Container"]
+            subgraph backend["Backend: Node.js Proc<br>(port 3001)"]
+                subgraph app["Express App"]
+                    staticmw["Static Middleware<br>(express.static)"]
+                    routes["API Route Handlers<br>(/api/*)"]
+                end
+                memory["In-Memory Data<br>(persons array)"]
+            end
+            files["Frontend Build Output<br>(dist, part of the image)"]
+        end
+    end 
+
+    browser -->|"1. Requests page &<br>bundled assets"| traefik
+    traefik -->|"2. Forwards over HTTP<br>(Docker network)"| staticmw
+    staticmw -->|"3. Reads files"| files
+    react -->|"4. API requests<br>(/api/*)"| traefik
+    traefik -->|"5. Forwards over HTTP<br>(Docker network)"| routes
+    routes -.->|"6. Reads & Writes<br>(in-process)"| memory
+```
+
+*Architecture diagram showing the request flow in production with Coolify's default setup. Solid arrows show who initiates each request or file read. Dotted arrows show in-process data access. Traefik and the app run in separate containers and communicate over Coolify's Docker network. The frontend build (`backend/dist`, committed to Git) is copied into the app's container image during deployment.*
 
 ### Deploying Changes
 
@@ -142,7 +172,7 @@ Coolify does **not** build the frontend. Express serves the `backend/dist` folde
 
 2. Commit the changes, including `backend/dist`, and push to `main`.
 
-3. Coolify detects the push and redeploys automatically. It installs the backend dependencies and starts the server with `npm start`.
+3. Trigger a deployment in Coolify. It installs the backend dependencies and starts the server with `npm start`.
 
 > **Note:** The repository's root `.gitignore` ignores all `dist` folders. `backend/.gitignore` re-includes this one with `!dist`, because production depends on it.
 
